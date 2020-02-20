@@ -1,6 +1,11 @@
-﻿using Microsoft.Xna.Framework;
+﻿#define VISUAL_DEBUG
+
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MonoGameWindowsStarter
 {
@@ -11,6 +16,14 @@ namespace MonoGameWindowsStarter
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
+        SpriteSheet sheet;
+        Player player;
+        Platform[] platforms;
+        Vector2[] platformPositions;
+        AxisList axisList;
+        SpriteFont font;
+        bool playerMadeIt;
+        const String madeIt = "You Made It";
 
         public Game1()
         {
@@ -37,10 +50,48 @@ namespace MonoGameWindowsStarter
         /// </summary>
         protected override void LoadContent()
         {
+#if VISUAL_DEBUG
+            VisualDebugging.LoadContent(Content);
+#endif
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
             // TODO: use this.Content to load your game content here
+            var texture = Content.Load<Texture2D>("CavemanSpriteSheet");
+            sheet = new SpriteSheet(texture, 25, 32);
+            var playerFrames = from index in Enumerable.Range(0, 16) select sheet[index];
+            player = new Player(this, playerFrames);
+
+            var viewportWidth = GraphicsDevice.Viewport.Width;
+            var viewportHeight = GraphicsDevice.Viewport.Height;
+            var tileSize = 32;
+
+            platformPositions = new Vector2[]
+            {
+                // bottom to top on screen
+                new Vector2(0, 400), // ground
+                new Vector2(viewportWidth/2 - tileSize, 290), // first
+                new Vector2(0, 215), // second
+                new Vector2(viewportWidth - 15*tileSize, 120) // top
+            };
+
+            platforms = new Platform[]
+            {
+                new Platform(platformPositions[0], 15),
+                new Platform(platformPositions[1], 10),
+                new Platform(platformPositions[2], 8),
+                new Platform(platformPositions[3], 15)
+            };
+
+            axisList = new AxisList();
+            foreach (Platform platform in platforms)
+            {
+                platform.LoadContent(Content);
+                axisList.AddGameObject(platform);
+            }
+
+            playerMadeIt = false;
+            font = Content.Load<SpriteFont>("font");
         }
 
         /// <summary>
@@ -63,6 +114,18 @@ namespace MonoGameWindowsStarter
                 Exit();
 
             // TODO: Add your update logic here
+            player.Update(gameTime);
+
+
+            //var platformsInRange = axisList.QueryRange(
+            //    player.Bounds.X, player.Bounds.X + player.Bounds.Width
+            //    );
+
+            // include all platforms or else only the first works
+            var platformsInRange = axisList.QueryRange(0, 500);
+            player.CheckForPlatformCollision(platformsInRange);
+
+            if (player.Position.X >= 814) playerMadeIt = true;
 
             base.Update(gameTime);
         }
@@ -75,8 +138,18 @@ namespace MonoGameWindowsStarter
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
+            spriteBatch.Begin();
             // TODO: Add your drawing code here
+            player.Draw(spriteBatch);
+            foreach (Platform platform in platforms) platform.Draw(spriteBatch);
 
+            if (playerMadeIt)
+            {
+                spriteBatch.DrawString(font, madeIt, new Vector2(300, 200), Color.Gold);
+                player.Position = new Vector2(0, 0);
+            }
+
+            spriteBatch.End();
             base.Draw(gameTime);
         }
     }
