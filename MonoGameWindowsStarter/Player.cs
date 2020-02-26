@@ -40,8 +40,8 @@ namespace MonoGameWindowsStarter
         SpriteEffects spriteEffects = SpriteEffects.None;
         Color color = Color.White;
         Vector2 origin = new Vector2(15, 31);
-        public Vector2 Position = new Vector2(2*32, 400);
-        public BoundingRectangle Bounds => new BoundingRectangle(Position - origin, 36, 32);
+        public Vector2 Position = new Vector2(500, 375);
+        public BoundingRectangle Bounds => new BoundingRectangle(Position - 1.2f*origin, 40, 40);
         Sprite[] frames;
 
         /// <summary>

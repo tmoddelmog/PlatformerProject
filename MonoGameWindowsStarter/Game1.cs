@@ -1,4 +1,4 @@
-﻿#define VISUAL_DEBUG
+﻿//#define VISUAL_DEBUG
 
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -14,16 +14,19 @@ namespace MonoGameWindowsStarter
     /// </summary>
     public class Game1 : Game
     {
+        const int SCREEN_WIDTH = 1000, SCREEN_HEIGHT = 750;
+        const int NUMBER_OF_PLATFORMS = 200;
+
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
         SpriteSheet sheet;
         Player player;
         Platform[] platforms;
-        Vector2[] platformPositions;
         AxisList axisList;
         SpriteFont font;
         bool playerMadeIt;
         const String madeIt = "You Made It";
+        GoalBox box;
 
         public Game1()
         {
@@ -40,6 +43,9 @@ namespace MonoGameWindowsStarter
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
+            graphics.PreferredBackBufferWidth = SCREEN_WIDTH;
+            graphics.PreferredBackBufferHeight = SCREEN_HEIGHT;
+            graphics.ApplyChanges();
 
             base.Initialize();
         }
@@ -62,26 +68,7 @@ namespace MonoGameWindowsStarter
             var playerFrames = from index in Enumerable.Range(0, 16) select sheet[index];
             player = new Player(this, playerFrames);
 
-            var viewportWidth = GraphicsDevice.Viewport.Width;
-            var viewportHeight = GraphicsDevice.Viewport.Height;
-            var tileSize = 32;
-
-            platformPositions = new Vector2[]
-            {
-                // bottom to top on screen
-                new Vector2(0, 400), // ground
-                new Vector2(viewportWidth/2 - tileSize, 290), // first
-                new Vector2(0, 215), // second
-                new Vector2(viewportWidth - 15*tileSize, 120) // top
-            };
-
-            platforms = new Platform[]
-            {
-                new Platform(platformPositions[0], 15),
-                new Platform(platformPositions[1], 10),
-                new Platform(platformPositions[2], 8),
-                new Platform(platformPositions[3], 15)
-            };
+            platforms = generatePlatforms(NUMBER_OF_PLATFORMS);
 
             axisList = new AxisList();
             foreach (Platform platform in platforms)
@@ -92,6 +79,9 @@ namespace MonoGameWindowsStarter
 
             playerMadeIt = false;
             font = Content.Load<SpriteFont>("font");
+
+            box = new GoalBox(SCREEN_WIDTH, SCREEN_HEIGHT);
+            box.LoadContent(Content);
         }
 
         /// <summary>
@@ -122,10 +112,14 @@ namespace MonoGameWindowsStarter
             //    );
 
             // include all platforms or else only the first works
-            var platformsInRange = axisList.QueryRange(0, 500);
-            player.CheckForPlatformCollision(platformsInRange);
+            //var platformsInRange = axisList.QueryRange(0, 500);
 
-            if (player.Position.X >= 814) playerMadeIt = true;
+            player.CheckForPlatformCollision(platforms);
+
+            if (player.Bounds.CollidesWith(box.Bounds))
+            {
+                playerMadeIt = true;
+            }
 
             base.Update(gameTime);
         }
@@ -136,21 +130,44 @@ namespace MonoGameWindowsStarter
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(Color.DarkGreen);
 
-            spriteBatch.Begin();
             // TODO: Add your drawing code here
+            var offset = new Vector2(500, 375) - player.Position;
+            var translation = Matrix.CreateTranslation(offset.X, offset.Y, 0);
+            spriteBatch.Begin(SpriteSortMode.Deferred, null, null, null, null, null, translation);
+
             player.Draw(spriteBatch);
             foreach (Platform platform in platforms) platform.Draw(spriteBatch);
 
             if (playerMadeIt)
             {
-                spriteBatch.DrawString(font, madeIt, new Vector2(300, 200), Color.Gold);
-                player.Position = new Vector2(0, 0);
+                spriteBatch.DrawString(font, madeIt, new Vector2(player.Position.X, 
+                    player.Position.Y), 
+                    Color.Gold);
+            }
+            else
+            {
+                box.Draw(spriteBatch);
             }
 
             spriteBatch.End();
             base.Draw(gameTime);
+        }
+
+        static Platform[] generatePlatforms(int numPlatforms)
+        {
+            Platform[] platforms = new Platform[numPlatforms];
+            Random r = new Random();
+
+            for (var i = 0; i < numPlatforms; i++)
+            {
+                platforms[i] = new Platform(new Vector2(r.Next(0, SCREEN_WIDTH * 4), // X
+                    r.Next(0, SCREEN_HEIGHT * 4)), // Y
+                    r.Next(2, 20)); // tile count
+            }
+
+            return platforms;
         }
     }
 }
