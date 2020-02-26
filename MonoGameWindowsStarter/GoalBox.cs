@@ -21,8 +21,8 @@ namespace MonoGameWindowsStarter
         public GoalBox(int screenWidth, int screenHeight)
         {
             random = new Random();
-            this.X = random.Next(0, screenWidth);
-            this.Y = random.Next(0, screenHeight);
+            this.X = random.Next(0, screenWidth + 100);
+            this.Y = random.Next(0, screenHeight + 100);
             this.Bounds = new BoundingRectangle(this.X, this.Y, BOX_SIZE, BOX_SIZE);
         }
 
